@@ -2,6 +2,7 @@
   "name": "satur.io/duckdb-auto",
   "description": "Install DuckDB PHP package and the C library required for the current OS.",
   "type": "composer-plugin",
+  "license": "MIT",
   "non-feature-branches": ["main"],
   "require": {
     "satur.io/duckdb": "self.version",

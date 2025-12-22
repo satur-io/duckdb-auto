@@ -36,8 +36,6 @@ class Installer implements PluginInterface, EventSubscriberInterface
 
     public function onPostPackageEvent(PackageEvent $event): void
     {
-        $this->io->write('<comment>Downloading DuckDB C library for your OS</comment>');
-
         if  ($event->getOperation() instanceof InstallOperation) {
             $package = $event->getOperation()->getPackage();
         } elseif ($event->getOperation() instanceof UpdateOperation) {
@@ -50,6 +48,7 @@ class Installer implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+        $this->io->write('<comment>Downloading DuckDB C library for your OS</comment>');
         MainPackageInstaller::install();
         $this->io->write('<info>DuckDB C lib downloaded.</info>');
     }

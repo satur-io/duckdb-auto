@@ -10,7 +10,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
-use Saturio\DuckDB\CLib\Installer as MainPackageInstaller;
+use Composer\Util\ProcessExecutor;
 
 class Installer implements PluginInterface, EventSubscriberInterface
 {
@@ -49,7 +49,14 @@ class Installer implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write('<comment>Downloading DuckDB C library for your OS</comment>');
-        MainPackageInstaller::install();
+        $executor = new ProcessExecutor($this->io);
+        $command = 'php -r "require \'vendor/autoload.php\'; Saturio\DuckDB\CLib\Installer::install();"';
+
+        if ($executor->execute($command) !== 0) {
+            $this->io->writeError('<error>Error executing php process to install C library.</error>');
+            exit(1);
+        }
+
         $this->io->write('<info>DuckDB C lib downloaded.</info>');
     }
 }

@@ -10,12 +10,15 @@ use Composer\Plugin\PluginInterface;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
+use Composer\Script\Event;
+use Composer\Script\ScriptEvents;
 use Composer\Util\ProcessExecutor;
 
 class Installer implements PluginInterface, EventSubscriberInterface
 {
     protected IOInterface $io;
     protected Composer $composer;
+    private bool $shouldInstall = false;
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -30,7 +33,8 @@ class Installer implements PluginInterface, EventSubscriberInterface
     {
         return [
             PackageEvents::POST_PACKAGE_INSTALL => 'onPostPackageEvent',
-            PackageEvents::POST_PACKAGE_UPDATE => 'onPostPackageEvent'
+            PackageEvents::POST_PACKAGE_UPDATE => 'onPostPackageEvent',
+            ScriptEvents::POST_AUTOLOAD_DUMP => 'onPostAutoloadDump',
         ];
     }
 
@@ -48,9 +52,24 @@ class Installer implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+        $this->shouldInstall = true;
+    }
+
+    public function onPostAutoloadDump(Event $event): void
+    {
+        if (!$this->shouldInstall) {
+            return;
+        }
+        $this->shouldInstall = false;
+
+        $vendorDir = $event->getComposer()->getConfig()->get('vendor-dir');
+        $autoload = $vendorDir . '/autoload.php';
+
         $this->io->write('<comment>Downloading DuckDB C library for your OS</comment>');
         $executor = new ProcessExecutor($this->io);
-        $command = 'php -r "require \'vendor/autoload.php\'; Saturio\DuckDB\CLib\Installer::install();"';
+        $command = 'php -r ' . escapeshellarg(
+            'require ' . var_export($autoload, true) . '; Saturio\DuckDB\CLib\Installer::install();'
+        );
 
         if ($executor->execute($command) !== 0) {
             $this->io->writeError('<error>Error executing php process to install C library.</error>');
